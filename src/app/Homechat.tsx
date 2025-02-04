@@ -25,6 +25,7 @@ import { LowCreditsWarning } from './components/LowCreditsWarning';
 import { CreditHistory } from './components/CreditHistory';
 import { LowCreditsModal } from './components/LowCreditsModal';
 import Image from 'next/image'
+import { LoadingAnimation } from '@/components/LoadingAnimation';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -263,11 +264,7 @@ export default function Home() {
 
   // Loading state
   if (!auth) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingAnimation message="Loading..." />;
   }
 
   const { signOut, isBanned, banInfo, isLocked, lockInfo } = auth;

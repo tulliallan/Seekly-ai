@@ -1,8 +1,8 @@
 interface LoadingAnimationProps {
-  message?: string; // Make message optional
+  message: string; // Make it required since we want to enforce good UX
 }
 
-export function LoadingAnimation({ message = "Loading..." }: LoadingAnimationProps) {
+export function LoadingAnimation({ message }: LoadingAnimationProps) {
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="space-y-6 text-center">
