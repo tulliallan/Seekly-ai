@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { FiAlertTriangle } from 'react-icons/fi';
-import { useAuth } from '@/lib/contexts/AuthContext';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface BanScreenProps {
   banInfo: {

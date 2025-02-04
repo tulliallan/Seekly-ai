@@ -8,8 +8,8 @@ import { initializeUserCredits } from "../credits";
 
 // Add new types for provider status
 interface ProviderStatus {
-  github: 'operational' | 'degraded' | 'outage';
-  google: 'operational' | 'degraded' | 'outage';
+  github: 'operational' | 'degraded' | 'down';
+  google: 'operational' | 'degraded' | 'down';
 }
 
 interface BanInfo {
@@ -30,14 +30,11 @@ type AuthContextType = {
   loading: boolean;
   isBanned: boolean;
   banInfo: BanInfo | null;
-  providerStatus: ProviderStatus;
   isLocked: boolean;
   lockInfo: LockInfo | null;
+  providerStatus: ProviderStatus;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string) => Promise<{ 
-    data: { user: User | null } | null;
-    error: AuthError | null;
-  }>;
+  signUp: (email: string, password: string) => Promise<{ data: any; error: AuthError | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -170,9 +167,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         isBanned,
         banInfo,
-        providerStatus,
         isLocked,
         lockInfo,
+        providerStatus,
         signIn,
         signUp,
         signOut,
