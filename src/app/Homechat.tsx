@@ -182,52 +182,55 @@ export default function Home() {
 
   // Credits effect
   useEffect(() => {
-    if (auth?.user) {
-      const fetchCredits = async () => {
-        const { data, error } = await supabase
-          .from('user_credits')
-          .select('*')
-          .eq('user_id', auth.user?.id)
-          .single();
+    if (!auth?.user) return;
 
-        if (error) {
-          console.error('Error fetching credits:', error);
-          return;
+    const fetchCredits = async () => {
+      const { data, error } = await supabase
+        .from('user_credits')
+        .select('*')
+        .eq('user_id', auth.user?.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching credits:', error);
+        return;
+      }
+
+      setCredits(data);
+    };
+
+    fetchCredits();
+
+    // Subscribe to credit changes
+    const subscription = supabase
+      .channel('credits')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_credits',
+          filter: `user_id=eq.${auth.user.id}`,
+        },
+        () => {
+          fetchCredits();
         }
+      )
+      .subscribe();
 
-        setCredits(data);
-      };
-      fetchCredits();
-
-      // Subscribe to credit changes
-      const subscription = supabase
-        .channel('credits')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_credits',
-            filter: `user_id=eq.${auth.user.id}`,
-          },
-          () => {
-            fetchCredits();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [auth?.user]);
 
-  // Notifications effect - moved to top level
+  // Notifications effect
   useEffect(() => {
+    if (!auth?.user) return;
+
     const fetchNotifications = async () => {
-      const { data, count } = await supabase
+      const { data } = await supabase
         .from('notifications')
-        .select('*', { count: 'exact' })
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (data) {
@@ -238,7 +241,6 @@ export default function Home() {
 
     fetchNotifications();
 
-    // Subscribe to changes
     const subscription = supabase
       .channel('notifications')
       .on(
@@ -257,7 +259,7 @@ export default function Home() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []); // Add supabase as dependency if needed
+  }, [auth?.user]); // Added auth?.user as dependency
 
   // Loading state
   if (!auth) {
