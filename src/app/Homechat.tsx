@@ -128,17 +128,6 @@ const TopBar = ({ className, systemStatus }: { className?: string; systemStatus:
 
 export default function Home() {
   const auth = useAuth();
-  
-  // If auth is undefined, we can show a loading state or redirect
-  if (!auth) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const { user, signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -183,7 +172,7 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
+    if (!auth) {
       router.push('/login');
       return;
     }
@@ -191,7 +180,7 @@ export default function Home() {
     if (!input.trim() || isLoading) return;
 
     // Check credits before proceeding
-    const hasCredits = await checkAndUpdateCredits(user.id);
+    const hasCredits = await checkAndUpdateCredits(auth.user.id);
     if (!hasCredits) {
       setShowLowCreditsModal(true);
       return;
@@ -411,7 +400,7 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await auth.signOut()
       router.push('/login')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -440,7 +429,7 @@ export default function Home() {
 
   useEffect(() => {
     checkSystemStatus();
-    const interval = setInterval(checkSystemStatus, 30000); // Check every 30 seconds
+    const interval = setInterval(checkSystemStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -509,12 +498,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (auth.user) {
       const fetchCredits = async () => {
         const { data, error } = await supabase
           .from('user_credits')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', auth.user.id)
           .single();
 
         if (error) {
@@ -536,7 +525,7 @@ export default function Home() {
             event: '*',
             schema: 'public',
             table: 'user_credits',
-            filter: `user_id=eq.${user.id}`,
+            filter: `user_id=eq.${auth.user.id}`,
           },
           () => {
             fetchCredits();
@@ -548,12 +537,18 @@ export default function Home() {
         subscription.unsubscribe();
       };
     }
-  }, [user]);
+  }, [auth.user]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
+  // Show loading state if auth is not initialized
+  if (!auth) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
+
+  const { user, signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
 
   if (isLocked && lockInfo) {
     return <LockedAccountScreen lockInfo={lockInfo} />;
