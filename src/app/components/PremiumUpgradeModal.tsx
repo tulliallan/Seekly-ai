@@ -11,26 +11,17 @@ interface PremiumUpgradeModalProps {
 }
 
 export function PremiumUpgradeModal({ isOpen, onClose, onUpgrade }: PremiumUpgradeModalProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async () => {
-    setIsProcessing(true);
+    setLoading(true);
     try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-      });
-      
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
+      await onUpgrade();
+      onClose();
     } catch (error) {
-      console.error('Error starting checkout:', error);
-      // Add error handling UI here
+      console.error('Error upgrading to premium:', error);
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
@@ -123,10 +114,10 @@ export function PremiumUpgradeModal({ isOpen, onClose, onUpgrade }: PremiumUpgra
               {/* Upgrade Button */}
               <button
                 onClick={handleUpgrade}
-                disabled={isProcessing}
+                disabled={loading}
                 className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg flex items-center justify-center gap-2 hover:from-blue-700 hover:to-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? (
+                {loading ? (
                   <>
                     <motion.div
                       animate={{ rotate: 360 }}
