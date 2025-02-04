@@ -127,8 +127,19 @@ const TopBar = ({ className, systemStatus }: { className?: string; systemStatus:
 };
 
 export default function Home() {
-  const { user, signOut, isBanned, banInfo, isLocked, lockInfo } = useAuth()
-  const router = useRouter()
+  const auth = useAuth();
+  
+  // If auth is undefined, we can show a loading state or redirect
+  if (!auth) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const { user, signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [lastQuery, setLastQuery] = useState('');
