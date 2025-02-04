@@ -127,7 +127,7 @@ const TopBar = ({ className, systemStatus }: { className?: string; systemStatus:
 };
 
 export default function Home() {
-  // Move all hooks to the top level
+  // All hooks at the top level
   const auth = useAuth();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -156,7 +156,7 @@ export default function Home() {
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [showLowCreditsModal, setShowLowCreditsModal] = useState(false);
 
-  // Add all useEffects at the top level too
+  // System status effect
   useEffect(() => {
     const checkSystemStatus = async () => {
       try {
@@ -180,6 +180,7 @@ export default function Home() {
     checkSystemStatus();
   }, []);
 
+  // Credits effect
   useEffect(() => {
     if (auth?.user) {
       const fetchCredits = async () => {
@@ -221,7 +222,44 @@ export default function Home() {
     }
   }, [auth?.user]);
 
-  // Now handle loading and error states
+  // Notifications effect - moved to top level
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data, count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.read).length);
+      }
+    };
+
+    fetchNotifications();
+
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Add supabase as dependency if needed
+
+  // Loading state
   if (!auth) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -233,6 +271,7 @@ export default function Home() {
   const { signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
   const user = auth.user;
 
+  // Early returns
   if (!user) {
     router.push('/login');
     return null;
@@ -498,42 +537,6 @@ export default function Home() {
       console.error('Error signing out:', error);
     }
   };
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const { data, count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
-      
-      if (data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.read).length);
-      }
-    };
-
-    fetchNotifications();
-
-    // Subscribe to changes
-    const subscription = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const markAsRead = async (id: string) => {
     try {
