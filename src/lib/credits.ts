@@ -1,0 +1,193 @@
+import { supabase } from '@/lib/supabase';
+
+export async function checkAndUpdateCredits(userId: string): Promise<boolean> {
+  try {
+    const { data: credits, error } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error checking credits:', error);
+      return false;
+    }
+
+    if (!credits) {
+      await initializeUserCredits(userId);
+      return true;
+    }
+
+    // Check if user has any credits remaining
+    if (credits.credits_remaining <= 0) {
+      // Check if user should get a free credit today
+      const lastCreditDate = new Date(credits.last_free_credit_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (lastCreditDate.getTime() < today.getTime()) {
+        // Give free credit and update date
+        const { error: updateError } = await supabase
+          .from('user_credits')
+          .update({
+            credits_remaining: 1,
+            last_free_credit_date: today.toISOString().split('T')[0]
+          })
+          .eq('user_id', userId);
+
+        if (updateError) {
+          console.error('Error updating credits:', updateError);
+          return false;
+        }
+        return true;
+      }
+      return false;
+    }
+
+    // Deduct one credit and log transaction
+    const { error: updateError } = await supabase
+      .from('user_credits')
+      .update({
+        credits_remaining: credits.credits_remaining - 1
+      })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error updating credits:', updateError);
+      return false;
+    }
+
+    // Log the transaction
+    await deductCredit(userId);
+
+    return true;
+  } catch (error) {
+    console.error('Error in checkAndUpdateCredits:', error);
+    return false;
+  }
+}
+
+export async function initializeUserCredits(userId: string) {
+  // First check if credits already exist
+  const { data: existingCredits } = await supabase
+    .from('user_credits')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (existingCredits) {
+    return; // Credits already initialized
+  }
+
+  // Initialize credits if they don't exist
+  const { error } = await supabase
+    .from('user_credits')
+    .insert({
+      user_id: userId,
+      credits_remaining: 10,
+      is_premium: false,
+      last_free_credit_date: new Date().toISOString().split('T')[0] // Just the date part
+    });
+
+  if (error) {
+    console.error('Error initializing credits:', error);
+    throw error;
+  }
+}
+
+const deductCredit = async (userId: string) => {
+  const { error: updateError } = await supabase.rpc('log_credit_transaction', {
+    p_user_id: userId,
+    p_amount: 1,
+    p_type: 'debit',
+    p_description: 'Chat message sent'
+  });
+
+  if (updateError) {
+    console.error('Error logging transaction:', updateError);
+  }
+};
+
+export async function addCreditsToUser(targetUserId: string, amount: number, adminId: string) {
+  const { data, error } = await supabase.rpc('add_user_credits', {
+    target_user_id: targetUserId,
+    credit_amount: amount,
+    admin_user_id: adminId
+  });
+
+  if (error) {
+    console.error('Error adding credits:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function getCreditHistory(userId: string) {
+  const { data, error } = await supabase
+    .from('credit_history')
+    .select(`
+      *,
+      admin:admin_id (
+        profile:user_profiles (
+          username
+        )
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching credit history:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getSystemStatus() {
+  const { data, error } = await supabase
+    .from('system_status')
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error fetching system status:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Add real-time subscription for credits
+export function subscribeToCredits(userId: string, onUpdate: (credits: any) => void) {
+  return supabase
+    .channel('credits-channel')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'user_credits',
+        filter: `user_id=eq.${userId}`
+      },
+      (payload) => onUpdate(payload.new)
+    )
+    .subscribe();
+}
+
+// Add real-time subscription for system status
+export function subscribeToSystemStatus(onUpdate: (status: any) => void) {
+  return supabase
+    .channel('system-status')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'system_status'
+      },
+      (payload) => onUpdate(payload.new)
+    )
+    .subscribe();
+} 
