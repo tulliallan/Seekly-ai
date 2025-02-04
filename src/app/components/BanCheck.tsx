@@ -13,15 +13,12 @@ interface BanStatus {
   ban_reason: string | null;
   banned_at: string | null;
   banned_until: string | null;
+  is_permanent: boolean;
   created_at: string;
   updated_at: string;
 }
 
-interface Props {
-  children: React.ReactNode;
-}
-
-export function BanCheck({ children }: Props) {
+export function BanCheck({ children }: { children: React.ReactNode }) {
   const [banStatus, setBanStatus] = useState<BanStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -29,76 +26,42 @@ export function BanCheck({ children }: Props) {
 
   useEffect(() => {
     async function checkBanStatus() {
-      console.log('BanCheck: Starting check with user:', user);
-      
       if (!user?.id) {
-        console.log('BanCheck: No user ID found');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('BanCheck: Querying ban status for user ID:', user.id);
-        
         const { data, error } = await supabase
-          .from('user_bans') // ✅ Corrected table name
+          .from('user_bans')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        console.log('BanCheck: Query result:', { data, error });
-
-        if (error) {
-          console.error('BanCheck: Error fetching ban status:', error);
-          setLoading(false);
-          return;
-        }
-
+        if (error) throw error;
         setBanStatus(data);
-        
-        if (data?.is_banned) {
-          console.log('BanCheck: User is banned:', data);
-        } else {
-          console.log('BanCheck: User is not banned');
-        }
       } catch (err) {
-        console.error('BanCheck: Error in ban check:', err);
+        console.error('Error checking ban status:', err);
       } finally {
         setLoading(false);
       }
     }
 
     checkBanStatus();
-  }, [user]);
+  }, [user, supabase]);
 
   if (loading) {
-    return <LoadingAnimation message="Loading..." />;
+    return <LoadingAnimation />;
   }
 
   if (banStatus?.is_banned) {
-    const bannedUntil = banStatus.banned_until ? new Date(banStatus.banned_until) : null;
-    const now = new Date();
-
-    console.log('BanCheck: Evaluating ban status:', {
-      userId: user?.id,
-      isBanned: banStatus.is_banned,
-      banStatus,
-      bannedUntil,
-      now,
-      isStillBanned: !bannedUntil || bannedUntil > now
-    });
-
-    if (!bannedUntil || bannedUntil > now) {
-      console.log('BanCheck: Rendering ban screen');
-      return (
-        <BanScreen 
-          banReason={banStatus.ban_reason || undefined} 
-          bannedUntil={banStatus.banned_until || undefined}
-        />
-      );
-    }
+    const banInfo = {
+      reason: banStatus.ban_reason || "Violation of terms of service",
+      bannedUntil: banStatus.banned_until ? new Date(banStatus.banned_until) : null,
+      isPermanent: banStatus.is_permanent
+    };
+    return <BanScreen banInfo={banInfo} />;
   }
 
-  console.log('BanCheck: Rendering children');
   return <>{children}</>;
 }

@@ -49,102 +49,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isBanned, setIsBanned] = useState(false);
   const [banInfo, setBanInfo] = useState<BanInfo | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockInfo, setLockInfo] = useState<LockInfo | null>(null);
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
     github: 'operational',
     google: 'operational'
   });
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockInfo, setLockInfo] = useState<LockInfo | null>(null);
   const supabase = createClientComponentClient();
 
-  // Add function to check provider status
-  const checkProviderStatus = async () => {
-    try {
-      const response = await fetch('/api/auth/provider-status');
-      const data = await response.json();
-      setProviderStatus(data);
-    } catch (error) {
-      console.error('Failed to check provider status:', error);
-    }
-  };
-
   useEffect(() => {
-    // Check provider status periodically
-    checkProviderStatus();
-    const interval = setInterval(checkProviderStatus, 60000); // Check every minute
-    return () => clearInterval(interval);
+    try {
+      // Listen for auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Auth state changed:', event, session?.user);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await checkBanStatus(session.user.id);
+            await checkLockStatus(session.user.id);
+          }
+          
+          setLoading(false);
+        }
+      );
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error in auth state change:', error);
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-
-    // Initial session check
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          console.log('Initial session check:', session?.user?.email);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Session check error:', error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          // Initialize credits for new users
-          await initializeUserCredits(session.user.id);
-          await Promise.all([
-            checkBanStatus(session.user.id),
-            checkLockStatus(session.user.id)
-          ]);
-        } else {
-          setUser(null);
-          setIsBanned(false);
-          setBanInfo(null);
-          setIsLocked(false);
-          setLockInfo(null);
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase.auth]);
-
+  // Add error boundaries to auth functions
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-
-      if (error) {
-        console.error('Sign in error:', error);
-        return { error };
-      }
-
-      // Check ban status immediately after successful login
-      if (data.user) {
-        await checkBanStatus(data.user.id);
-      }
-
-      console.log('Sign in successful:', data.user?.email);
-      return { error: null };
+      return { error };
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('Error signing in:', error);
       return { error: error as AuthError };
     }
   };
@@ -152,31 +100,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password
+        email,
+        password,
       });
-
-      if (error) throw error;
-
-      if (data.user) {
-        // Initialize credits for new user
-        await initializeUserCredits(data.user.id);
-      }
-
-      return { data, error: null };
+      return { data, error };
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error('Error signing up:', error);
       return { data: null, error: error as AuthError };
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setIsBanned(false);
-    setBanInfo(null);
-    setIsLocked(false);
-    setLockInfo(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const checkBanStatus = async (userId: string) => {
@@ -225,18 +164,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      isBanned, 
-      banInfo, 
-      providerStatus,
-      isLocked,
-      lockInfo,
-      signIn, 
-      signUp, 
-      signOut 
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isBanned,
+        banInfo,
+        providerStatus,
+        isLocked,
+        lockInfo,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
