@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { AnimatedBackground } from './components/AnimatedBackground'
 import { useAuth } from '@/lib/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { FiUser, FiLogOut, FiSettings, FiBell, FiStar, FiCreditCard } from 'react-icons/fi'
+import { FiUser, FiLogOut, FiSettings, FiBell, FiStar, FiCreditCard, FiLink } from 'react-icons/fi'
 import { BanScreen } from './components/BanScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { StatusBar } from './components/StatusBar';
@@ -26,6 +26,7 @@ import { CreditHistory } from './components/CreditHistory';
 import { LowCreditsModal } from './components/LowCreditsModal';
 import Image from 'next/image'
 import { LoadingAnimation } from '@/components/LoadingAnimation';
+import { ErrorScreen } from './components/ErrorScreen';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -88,12 +89,35 @@ interface UserCredits {
   last_free_credit_date: string;
 }
 
+interface TopBarProps {
+  className?: string;
+  systemStatus: string;
+  unreadCount: number;
+  showNotifications: boolean;
+  setShowNotifications: (show: boolean) => void;
+  showSettings: boolean;
+  setShowSettings: (show: boolean) => void;
+  showUserMenu: boolean;
+  setShowUserMenu: (show: boolean) => void;
+}
+
 const logoUrl = "https://media.discordapp.net/attachments/1324835178111176744/1336016327726465075/Blue_And_Orange_Simple_Modern_Cafe_Coffee_Shop_Chirping_Bird_Logo_1.png?ex=67a245aa&is=67a0f42a&hm=7c2d8b7b3c0d3db0e9e800748c8c25189838fa87e37cc1b7574627564e9fea7d&=&format=webp&quality=lossless&width=449&height=449"
 
 // Update the TopBar component
-const TopBar = ({ className, systemStatus }: { className?: string; systemStatus: string }) => {
+const TopBar = ({ 
+  className, 
+  systemStatus,
+  unreadCount,
+  showNotifications,
+  setShowNotifications,
+  showSettings,
+  setShowSettings,
+  showUserMenu,
+  setShowUserMenu
+}: TopBarProps) => {
   return (
     <div className="fixed top-0 left-0 right-0 h-16 bg-gray-800/50 backdrop-blur-xl flex items-center justify-between px-6 z-50 border-b border-white/10">
+      {/* Left section */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -118,10 +142,53 @@ const TopBar = ({ className, systemStatus }: { className?: string; systemStatus:
         <UpdateLog />
       </div>
       
-      {/* Status indicator */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 rounded-full transition-colors">
-        <div className="w-2 h-2 rounded-full bg-green-500" />
-        <span className="text-sm text-green-400">All Systems Operational</span>
+      {/* Right section */}
+      <div className="flex items-center gap-4">
+        {/* Integrations button */}
+        <Link
+          href="/integrations"
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors relative group"
+        >
+          <FiLink className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+          <span className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Integrations
+          </span>
+        </Link>
+
+        {/* Notifications button */}
+        <button
+          onClick={() => setShowNotifications(true)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors relative group"
+        >
+          <div className="relative">
+            <FiBell className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+            {unreadCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-medium">{unreadCount}</span>
+              </div>
+            )}
+          </div>
+        </button>
+
+        {/* Settings button */}
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors relative group"
+        >
+          <FiSettings className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+        </button>
+
+        {/* User menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <FiUser className="w-4 h-4 text-blue-400" />
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -156,6 +223,7 @@ export default function Home() {
   const [showCreditHistory, setShowCreditHistory] = useState(false);
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [showLowCreditsModal, setShowLowCreditsModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // System status effect
   useEffect(() => {
@@ -282,6 +350,10 @@ export default function Home() {
 
   if (isLocked && lockInfo) {
     return <LockedAccountScreen lockInfo={lockInfo} />;
+  }
+
+  if (error) {
+    return <ErrorScreen />;
   }
 
   const suggestions: SuggestionType[] = [
@@ -567,7 +639,16 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-gray-900 overflow-hidden pt-16">
-      <TopBar systemStatus={systemStatus} />
+      <TopBar 
+        systemStatus={systemStatus}
+        unreadCount={unreadCount}
+        showNotifications={showNotifications}
+        setShowNotifications={setShowNotifications}
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        showUserMenu={showUserMenu}
+        setShowUserMenu={setShowUserMenu}
+      />
       <AnimatedBackground />
       <NotificationBar />
       <UpdateLog />
