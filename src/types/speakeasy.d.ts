@@ -14,25 +14,33 @@ declare module 'speakeasy' {
     otpauth_url?: string;
   }
 
-  export function generateSecret(options?: GenerateSecretOptions): Secret;
-  
-  export function totp({
-    secret,
-    encoding,
-    step,
-    time,
-    counter,
-    digits,
-    algorithm
-  }: {
+  interface VerifyOptions {
     secret: string;
     encoding?: 'ascii' | 'hex' | 'base32';
+    token: string;
+    window?: number;
     step?: number;
     time?: number;
     counter?: number;
     digits?: number;
     algorithm?: 'sha1' | 'sha256' | 'sha512';
-  }): string;
+  }
+
+  export function generateSecret(options?: GenerateSecretOptions): Secret;
+  
+  export const totp: {
+    generate: (options: {
+      secret: string;
+      encoding?: 'ascii' | 'hex' | 'base32';
+      step?: number;
+      time?: number;
+      counter?: number;
+      digits?: number;
+      algorithm?: 'sha1' | 'sha256' | 'sha512';
+    }) => string;
+    
+    verify: (options: VerifyOptions) => boolean;
+  };
 
   export function hotp(options: {
     secret: string;
