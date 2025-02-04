@@ -172,7 +172,7 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!auth) {
+    if (!auth || !auth.user) {
       router.push('/login');
       return;
     }
@@ -498,7 +498,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (auth.user) {
+    if (auth?.user) {
       const fetchCredits = async () => {
         const { data, error } = await supabase
           .from('user_credits')
@@ -537,7 +537,7 @@ export default function Home() {
         subscription.unsubscribe();
       };
     }
-  }, [auth.user]);
+  }, [auth?.user]);
 
   // Show loading state if auth is not initialized
   if (!auth) {
