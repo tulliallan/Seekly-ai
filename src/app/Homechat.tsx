@@ -400,12 +400,13 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut()
-      router.push('/login')
+      if (!auth) return;
+      await auth.signOut();
+      router.push('/login');
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error('Error signing out:', error);
     }
-  }
+  };
 
   const checkSystemStatus = async () => {
     try {
@@ -503,7 +504,7 @@ export default function Home() {
         const { data, error } = await supabase
           .from('user_credits')
           .select('*')
-          .eq('user_id', auth.user.id)
+          .eq('user_id', auth.user?.id)
           .single();
 
         if (error) {
@@ -548,7 +549,8 @@ export default function Home() {
     );
   }
 
-  const { user, signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
+  const { signOut, isBanned, banInfo, isLocked, lockInfo } = auth;
+  const user = auth.user;
 
   if (isLocked && lockInfo) {
     return <LockedAccountScreen lockInfo={lockInfo} />;
@@ -865,11 +867,18 @@ export default function Home() {
                                     {...props}
                                   />
                                 ),
-                                code: ({node, inline, ...props}) => (
-                                  inline 
-                                    ? <code className="bg-white/10 rounded px-1 py-0.5 text-sm" {...props} />
-                                    : <code className="block bg-white/10 rounded-lg p-4 text-sm overflow-x-auto" {...props} />
-                                ),
+                                code: ({className, children, ...props}) => {
+                                  const isInline = !className;
+                                  return isInline ? (
+                                    <code className="bg-white/10 rounded px-1 py-0.5 text-sm" {...props}>
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code className="block bg-white/10 rounded-lg p-4 text-sm overflow-x-auto" {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                },
                               }}
                             >
                               {section.response}
@@ -1179,8 +1188,6 @@ export default function Home() {
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
         onUpgrade={async () => {
-          // Implement your payment logic here
-          // After successful payment:
           await supabase
             .from('user_credits')
             .update({
@@ -1188,7 +1195,7 @@ export default function Home() {
               premium_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
               credits_remaining: 500
             })
-            .eq('user_id', user.id);
+            .eq('user_id', auth.user?.id);
         }}
       />
 
