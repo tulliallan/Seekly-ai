@@ -51,7 +51,7 @@ export function BanCheck({ children }: { children: React.ReactNode }) {
   }, [user, supabase]);
 
   if (loading) {
-    return <LoadingAnimation />;
+    return <LoadingAnimation message="Checking account status..." />;
   }
 
   if (banStatus?.is_banned) {
