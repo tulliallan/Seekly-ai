@@ -4,13 +4,15 @@ import { motion } from 'framer-motion';
 import { FiAlertTriangle } from 'react-icons/fi';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-interface BanInfo {
-  reason: string;
-  bannedUntil: Date | null;
-  isPermanent: boolean;
+interface BanScreenProps {
+  banInfo: {
+    reason: string;
+    bannedUntil: Date | null;
+    isPermanent: boolean;
+  };
 }
 
-export function BanScreen({ banInfo }: { banInfo: BanInfo }) {
+export function BanScreen({ banInfo }: BanScreenProps) {
   const { signOut } = useAuth();
 
   return (
@@ -29,16 +31,20 @@ export function BanScreen({ banInfo }: { banInfo: BanInfo }) {
         </h1>
         
         <p className="text-gray-300 text-center mb-6">
-          {banInfo.isPermanent 
-            ? "Your account has been permanently suspended."
-            : `Your account has been temporarily suspended until ${banInfo.bannedUntil?.toLocaleDateString()}`
-          }
+          {banInfo.reason || "Your account has been banned for violating our terms of service."}
         </p>
         
-        <div className="bg-red-500/10 rounded-lg p-4 mb-6">
-          <h2 className="text-red-400 font-medium mb-2">Reason for suspension:</h2>
-          <p className="text-gray-300">{banInfo.reason}</p>
-        </div>
+        {!banInfo.isPermanent && banInfo.bannedUntil && (
+          <p className="text-gray-400">
+            Ban expires: {new Date(banInfo.bannedUntil).toLocaleDateString()}
+          </p>
+        )}
+        
+        {banInfo.isPermanent && (
+          <p className="text-red-400">
+            This is a permanent ban.
+          </p>
+        )}
 
         <div className="text-center">
           <button
