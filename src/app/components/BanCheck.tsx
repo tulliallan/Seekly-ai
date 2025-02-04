@@ -69,7 +69,7 @@ export function BanCheck({ children }: Props) {
     }
 
     checkBanStatus();
-  }, [user?.id, supabase]);
+  }, [user]);
 
   if (loading) {
     return <LoadingAnimation message="Loading..." />;

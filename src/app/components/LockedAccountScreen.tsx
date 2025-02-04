@@ -160,7 +160,7 @@ export function LockedAccountScreen({ lockInfo }: { lockInfo: LockInfo }) {
                       Reactivation Request Sent
                     </h3>
                     <p className="text-sm text-gray-300 mt-1">
-                      We've received your request. Our team will review it and respond within 24-48 hours.
+                      We&apos;ve received your request. Our team will review it and respond within 24-48 hours.
                     </p>
                   </div>
                 </div>

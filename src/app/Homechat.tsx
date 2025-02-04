@@ -24,6 +24,7 @@ import { checkAndUpdateCredits } from '@/lib/credits';
 import { LowCreditsWarning } from './components/LowCreditsWarning';
 import { CreditHistory } from './components/CreditHistory';
 import { LowCreditsModal } from './components/LowCreditsModal';
+import Image from 'next/image'
 
 interface Message {
   role: 'user' | 'assistant';
@@ -96,10 +97,12 @@ const TopBar = ({ className, systemStatus }: { className?: string; systemStatus:
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-lg animate-pulse" />
-            <img 
+            <Image 
               src={logoUrl}
               alt="Seekly Logo" 
               className="relative h-10 w-10 rounded-full ring-2 ring-white/20 shadow-lg transition-transform hover:scale-105"
+              width={449}
+              height={449}
             />
           </div>
           <h1 className="text-2xl font-serif text-white tracking-tight">
@@ -590,10 +593,12 @@ export default function Home() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-full blur-2xl animate-pulse" />
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-md opacity-50" />
-                      <img 
+                      <Image 
                         src={logoUrl}
                         alt="Seekly Logo" 
                         className="relative h-20 w-20 rounded-full ring-4 ring-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300"
+                        width={449}
+                        height={449}
                       />
                     </div>
                   </div>
@@ -701,7 +706,7 @@ export default function Home() {
                                 {result.image ? (
                                   <>
                                     <div className="absolute inset-0 bg-gray-800/50 animate-pulse" />
-                                    <img 
+                                    <Image 
                                       src={result.image.url} 
                                       alt={result.image.description || result.title}
                                       className="w-full h-full object-cover relative z-10"
@@ -710,6 +715,8 @@ export default function Home() {
                                         target.style.opacity = '1';
                                       }}
                                       style={{ opacity: 0, transition: 'opacity 0.3s' }}
+                                      width={500}
+                                      height={300}
                                     />
                                   </>
                                 ) : (

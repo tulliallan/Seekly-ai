@@ -35,7 +35,7 @@ export default function TokenGatedChat() {
     }
 
     getTokenBalance();
-  }, [user]);
+  }, [user, supabase]);
 
   if (loading) {
     return (

@@ -29,6 +29,10 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
