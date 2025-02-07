@@ -68,28 +68,45 @@ export async function checkAndUpdateCredits(userId: string): Promise<boolean> {
 }
 
 export async function initializeUserCredits(userId: string) {
-  // First check if credits already exist
-  const { data: existingCredits } = await supabase
-    .from('user_credits')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  try {
+    // First check if credits already exist
+    const { data: existingCredits } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
 
-  if (existingCredits) {
-    return; // Credits already initialized
-  }
+    if (existingCredits) {
+      return; // Credits already initialized
+    }
 
-  // Initialize credits if they don't exist
-  const { error } = await supabase
-    .from('user_credits')
-    .insert({
-      user_id: userId,
-      credits_remaining: 10,
-      is_premium: false,
-      last_free_credit_date: new Date().toISOString().split('T')[0] // Just the date part
-    });
+    // Initialize credits in a transaction
+    const { error: creditsError } = await supabase
+      .from('user_credits')
+      .insert({
+        user_id: userId,
+        credits_remaining: 10,
+        monthly_usage: 0,
+        total_credits_used: 0,
+        is_premium: false,
+        last_free_credit_date: new Date().toISOString().split('T')[0]
+      });
 
-  if (error) {
+    if (creditsError) throw creditsError;
+
+    // Add initial credit history entry
+    const { error: historyError } = await supabase
+      .from('credit_history')
+      .insert({
+        user_id: userId,
+        amount: 10,
+        type: 'add',
+        description: 'Welcome bonus - 10 free credits'
+      });
+
+    if (historyError) throw historyError;
+
+  } catch (error) {
     console.error('Error initializing credits:', error);
     throw error;
   }
@@ -108,19 +125,44 @@ const deductCredit = async (userId: string) => {
   }
 };
 
-export async function addCreditsToUser(targetUserId: string, amount: number, adminId: string) {
-  const { data, error } = await supabase.rpc('add_user_credits', {
-    target_user_id: targetUserId,
-    credit_amount: amount,
-    admin_user_id: adminId
-  });
+export async function addCreditsToUser(userId: string, amount: number, reason: string) {
+  try {
+    // Get current credits in a transaction
+    const { data: currentCredits, error: fetchError } = await supabase
+      .from('user_credits')
+      .select('credits_remaining')
+      .eq('user_id', userId)
+      .single();
 
-  if (error) {
+    if (fetchError) throw fetchError;
+
+    // Update credits
+    const { error: updateError } = await supabase
+      .from('user_credits')
+      .update({
+        credits_remaining: (currentCredits?.credits_remaining || 0) + amount
+      })
+      .eq('user_id', userId);
+
+    if (updateError) throw updateError;
+
+    // Add to credit history
+    const { error: historyError } = await supabase
+      .from('credit_history')
+      .insert({
+        user_id: userId,
+        amount,
+        type: 'add',
+        description: reason
+      });
+
+    if (historyError) throw historyError;
+
+    return true;
+  } catch (error) {
     console.error('Error adding credits:', error);
-    throw new Error(error.message);
+    return false;
   }
-
-  return data;
 }
 
 export async function getCreditHistory(userId: string) {

@@ -30,15 +30,13 @@ export function StatusBar() {
   if (loading || systemStatus === 'operational') return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center"
-    >
-      <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-b-lg">
-        <FiCheckCircle className="w-4 h-4 text-green-400" />
-        <span className="text-sm text-green-400">All systems operational</span>
+    <div className="fixed top-0 left-0 right-0 bg-yellow-500/10 border-b border-yellow-500/20 backdrop-blur-sm z-40">
+      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
+        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+        <p className="text-sm text-yellow-200 text-center">
+          Some users are experiencing API issues, causing credits to show as 0. We are aware and are working on a fix.
+        </p>
       </div>
-    </motion.div>
+    </div>
   );
 } 

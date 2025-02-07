@@ -2,24 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertTriangle, FiX, FiCheck } from 'react-icons/fi';
+import { FiAlertTriangle, FiX, FiCheck, FiLogIn, FiLogOut } from 'react-icons/fi';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import Link from 'next/link';
 
 interface Strike {
   id: string;
   reason: string;
-  severity: 'warning' | 'strike' | 'final_warning';
+  severity: 'warning' | 'strike' | 'final_warning' | 'ban';
   created_at: string;
   acknowledged: boolean;
   strike_count: number;
   warning_message: string;
+  ban_duration?: string;
 }
 
 export function StrikeWarning() {
   const [strikes, setStrikes] = useState<Strike[]>([]);
   const [showWarning, setShowWarning] = useState(false);
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     if (!user) return;
@@ -82,86 +84,98 @@ export function StrikeWarning() {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/login';
+  };
+
   return (
     <AnimatePresence>
       {showWarning && strikes.map((strike) => (
         <motion.div
           key={strike.id}
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className="fixed top-20 inset-x-0 z-50 flex justify-center px-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div className={`w-full max-w-2xl bg-gray-900/95 backdrop-blur-xl rounded-xl border shadow-xl overflow-hidden ${
-            strike.severity === 'warning' ? 'border-yellow-500/50' :
-            strike.severity === 'strike' ? 'border-red-500/50' :
-            'border-red-700/50'
-          }`}>
-            <div className={`p-4 ${
-              strike.severity === 'warning' ? 'bg-yellow-500/10' :
-              strike.severity === 'strike' ? 'bg-red-500/10' :
-              'bg-red-700/10'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    strike.severity === 'warning' ? 'bg-yellow-500/20' :
-                    strike.severity === 'strike' ? 'bg-red-500/20' :
-                    'bg-red-700/20'
-                  }`}>
-                    <FiAlertTriangle className={`w-6 h-6 ${
-                      strike.severity === 'warning' ? 'text-yellow-500' :
-                      strike.severity === 'strike' ? 'text-red-500' :
-                      'text-red-700'
-                    }`} />
+          {/* Semi-transparent backdrop */}
+          <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm" />
+
+          <div className="relative z-10 max-w-2xl w-full">
+            <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-red-500/20 shadow-2xl overflow-hidden">
+              <div className="p-8 bg-gradient-to-b from-red-500/10 to-transparent">
+                <div className="flex flex-col items-center text-center gap-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-red-500 blur-2xl opacity-20 animate-pulse"></div>
+                    <div className="p-5 rounded-full bg-red-500/20 relative">
+                      <FiAlertTriangle className="w-12 h-12 text-red-500" />
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      {strike.severity === 'warning' ? 'Account Warning' :
-                       strike.severity === 'strike' ? 'Account Strike' :
-                       'Final Warning'}
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-3xl font-bold text-white">
+                      Account Banned
                     </h3>
-                    <p className="text-sm text-gray-400">
-                      Strike Count: {strike.strike_count}
+                    {strike.ban_duration && (
+                      <p className="text-xl text-red-400">
+                        Duration: {strike.ban_duration}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">Reason for Ban</h4>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-white text-lg">{strike.reason}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">Important Notice</h4>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-gray-300">
+                      Your account has been banned for violating our community guidelines. 
+                      This decision has been carefully reviewed by our moderation team. 
+                      {strike.warning_message && (
+                        <span className="block mt-2">{strike.warning_message}</span>
+                      )}
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => acknowledgeStrike(strike.id)}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <FiX className="w-5 h-5 text-gray-400 hover:text-white" />
-                </button>
+
+                <div className="pt-6">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-6 py-4 rounded-lg flex items-center justify-center gap-2 text-base font-medium
+                    bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
+                    text-white transition-all duration-200 shadow-lg shadow-blue-500/25"
+                  >
+                    <FiLogOut className="w-5 h-5" />
+                    Log Out
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-1">Reason</h4>
-                <p className="text-white">{strike.reason}</p>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-1">Warning Message</h4>
-                <p className="text-gray-300">{strike.warning_message}</p>
-              </div>
-
-              <div className="pt-4 border-t border-white/10">
-                <button
-                  onClick={() => acknowledgeStrike(strike.id)}
-                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-                    strike.severity === 'warning' 
-                      ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400'
-                      : strike.severity === 'strike'
-                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
-                      : 'bg-red-700/20 hover:bg-red-700/30 text-red-300'
-                  }`}
-                >
-                  <FiCheck className="w-4 h-4" />
-                  I Understand and Acknowledge
-                </button>
-              </div>
-            </div>
+          {/* Subtle animated particles in the modal */}
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            {[...Array(10)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 bg-red-500/20 rounded-full"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animation: `float ${10 + Math.random() * 20}s linear infinite`,
+                  animationDelay: `-${Math.random() * 20}s`,
+                }}
+              />
+            ))}
           </div>
         </motion.div>
       ))}

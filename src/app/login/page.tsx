@@ -11,6 +11,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiUser } from 'react-icons/fi'
 import { LogoSection } from '../components/LogoSection'
 import { LoadingAnimation } from '../components/LoadingAnimation'
 import { StatusBar } from '../components/StatusBar'
+import { LoadingScreen } from '../components/LoadingScreen'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -65,7 +66,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 pt-8">
       <StatusBar />
       <AnimatedBackground />
       
@@ -91,6 +92,7 @@ export default function LoginPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="backdrop-blur-xl bg-white/10 p-8 rounded-2xl shadow-xl border border-white/20"
           >
+            {isLoading && <LoadingScreen />}
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <div className="text-red-500 text-center bg-red-500/10 p-3 rounded-lg">

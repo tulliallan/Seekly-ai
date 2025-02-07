@@ -1,134 +1,187 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import { FiShield, FiLock, FiUserCheck, FiGlobe, FiClock, FiAlertCircle } from 'react-icons/fi';
 import { AnimatedBackground } from '../components/AnimatedBackground';
+import { StatusBar } from '../components/StatusBar';
 import Link from 'next/link';
+
+const sections = [
+  {
+    icon: <FiShield className="w-6 h-6" />,
+    title: "Privacy & Security",
+    content: "We take your privacy seriously. Your data is encrypted and securely stored using industry-standard protocols."
+  },
+  {
+    icon: <FiLock className="w-6 h-6" />,
+    title: "Data Protection",
+    content: "Your personal information is protected under strict data protection laws and regulations."
+  },
+  {
+    icon: <FiUserCheck className="w-6 h-6" />,
+    title: "User Rights",
+    content: "You maintain full control over your data with rights to access, modify, or delete your information."
+  },
+  {
+    icon: <FiGlobe className="w-6 h-6" />,
+    title: "Service Usage",
+    content: "Our services are provided 'as is' with continuous improvements and updates to enhance your experience."
+  },
+  {
+    icon: <FiClock className="w-6 h-6" />,
+    title: "Term Duration",
+    content: "These terms remain in effect throughout your use of our services and can be updated with notice."
+  },
+  {
+    icon: <FiAlertCircle className="w-6 h-6" />,
+    title: "Compliance",
+    content: "Users must comply with all applicable laws and our community guidelines."
+  }
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
+const floatingVariants = {
+  initial: { y: 0 },
+  animate: {
+    y: [-10, 10, -10],
+    transition: {
+      duration: 6,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
 
 export default function TermsPage() {
   return (
-    <div className="relative min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 pt-8">
+      <StatusBar />
       <AnimatedBackground />
       
+      {/* Enhanced background patterns */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,#3b82f6,transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_20%,#818cf8,transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_0%_80%,#6366f1,transparent)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#080808_1px,transparent_1px),linear-gradient(to_bottom,#080808_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20" />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-8">
-          <nav className="flex items-center justify-between mb-8">
-            <Link 
-              href="/"
-              className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300"
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
+          <h1 className="text-5xl font-bold text-white mb-6">
+            Terms of Service
+          </h1>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            Please read these terms carefully before using our services
+          </p>
+        </motion.div>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+        >
+          {sections.map((section, index) => (
+            <motion.div
+              key={index}
+              variants={itemVariants}
+              whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+              className="relative group"
             >
-              ← Back to Home
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Privacy Policy →
-            </Link>
-          </nav>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+              <div className="relative bg-white/10 backdrop-blur-xl p-8 rounded-xl border border-white/20 hover:border-white/40 transition-colors">
+                <motion.div
+                  variants={floatingVariants}
+                  initial="initial"
+                  animate="animate"
+                  className="flex justify-center mb-6"
+                >
+                  <div className="p-3 bg-blue-500/20 rounded-lg text-blue-400">
+                    {section.icon}
+                  </div>
+                </motion.div>
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  {section.title}
+                </h3>
+                <p className="text-gray-300">
+                  {section.content}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-          <h1 className="text-3xl font-bold text-white mb-8">Terms of Service</h1>
-          
-          <div className="prose prose-invert max-w-none space-y-8">
-            <section>
-              <h2 className="text-2xl font-semibold text-white">1. Acceptance of Terms</h2>
-              <p className="text-gray-300">
-                By accessing and using Seekly ("the Service"), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">2. Description of Service</h2>
-              <p className="text-gray-300">
-                Seekly is an AI-powered search and analysis platform that provides users with intelligent responses to queries using various data sources and AI models.
-              </p>
-              <ul className="list-disc pl-6 text-gray-300 space-y-2">
-                <li>Search functionality using multiple data sources</li>
-                <li>AI-powered analysis and response generation</li>
-                <li>User account management and customization</li>
-                <li>Content saving and sharing capabilities</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">3. User Accounts</h2>
-              <p className="text-gray-300">
-                To access certain features of the Service, you must create an account. You agree to:
-              </p>
-              <ul className="list-disc pl-6 text-gray-300 space-y-2">
-                <li>Provide accurate and complete registration information</li>
-                <li>Maintain the security of your account credentials</li>
-                <li>Accept responsibility for all activities under your account</li>
-                <li>Notify us immediately of any unauthorized access</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">4. Acceptable Use</h2>
-              <p className="text-gray-300">You agree not to:</p>
-              <ul className="list-disc pl-6 text-gray-300 space-y-2">
-                <li>Use the Service for any illegal purposes</li>
-                <li>Submit content that violates intellectual property rights</li>
-                <li>Attempt to gain unauthorized access to the Service</li>
-                <li>Use the Service to distribute malware or harmful code</li>
-                <li>Engage in activities that disrupt the Service</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">5. Data Usage and Privacy</h2>
-              <p className="text-gray-300">
-                Your use of the Service is also governed by our <Link href="/privacy" className="text-blue-400 hover:text-blue-300">Privacy Policy</Link>. By using the Service, you consent to our collection and use of data as described in the Privacy Policy.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">6. Intellectual Property</h2>
-              <p className="text-gray-300">
-                All content and materials available through the Service are protected by intellectual property rights. You may not use, reproduce, or distribute such content without proper authorization.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">7. Termination</h2>
-              <p className="text-gray-300">
-                We reserve the right to suspend or terminate your access to the Service:
-              </p>
-              <ul className="list-disc pl-6 text-gray-300 space-y-2">
-                <li>For violations of these terms</li>
-                <li>For abusive or harmful behavior</li>
-                <li>At our sole discretion</li>
-                <li>Without prior notice</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">8. Changes to Terms</h2>
-              <p className="text-gray-300">
-                We may modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the modified terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-semibold text-white">9. Contact Information</h2>
-              <p className="text-gray-300">
-                For questions about these terms or the Service, please contact:
-              </p>
-              <ul className="list-none pl-6 text-gray-300 space-y-2">
-                <li>Email: support@seekly.com</li>
-                <li>Address: 123 Tech Street, San Francisco, CA 94105</li>
-              </ul>
-            </section>
-
-            <div className="border-t border-white/10 pt-8 mt-8">
-              <p className="text-sm text-gray-400">
-                Last updated: {new Date().toLocaleDateString()}
-              </p>
-            </div>
-          </div>
+        {/* Floating particles */}
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: [0.1, 0.3, 0.1],
+                scale: [1, 1.2, 1],
+                x: [0, Math.random() * 100 - 50, 0],
+                y: [0, Math.random() * 100 - 50, 0],
+              }}
+              transition={{
+                duration: 10 + Math.random() * 10,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+              }}
+              className="absolute w-2 h-2 bg-white/10 rounded-full"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+              }}
+            />
+          ))}
         </div>
+
+        {/* Bottom section with additional info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1 }}
+          className="mt-16 text-center"
+        >
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            By using our services, you agree to these terms. We reserve the right to update these terms at any time. 
+            Please check back regularly for updates.
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="mt-8 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200"
+          >
+            Accept Terms
+          </motion.button>
+        </motion.div>
       </div>
     </div>
   );

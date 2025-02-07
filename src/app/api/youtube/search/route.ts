@@ -1,51 +1,26 @@
+import { searchYouTubeVideos } from '@/lib/youtube';
 import { NextResponse } from 'next/server';
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-const DEFAULT_RESULTS = [
-  {
-    id: '1',
-    title: 'Sample Video 1',
-    thumbnail: 'https://via.placeholder.com/320x180',
-    duration: '3:45'
-  },
-  {
-    id: '2',
-    title: 'Sample Video 2',
-    thumbnail: 'https://via.placeholder.com/320x180',
-    duration: '4:20'
-  }
-];
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
-
-  if (!query) {
-    return NextResponse.json({ items: [] });
-  }
-
+export async function POST(req: Request) {
   try {
-    if (!YOUTUBE_API_KEY) {
-      // Return default results if no API key
-      return NextResponse.json({ items: DEFAULT_RESULTS });
+    const { query, type = 'videos' } = await req.json();
+    
+    const isAnalytics = query.toLowerCase().includes('analytics') || 
+                       query.toLowerCase().includes('stats') ||
+                       type === 'analytics';
+    
+    const results = await searchYouTubeVideos(query, isAnalytics);
+    
+    if (!results) {
+      throw new Error('No results found');
     }
-
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&key=${YOUTUBE_API_KEY}&maxResults=9`
-    );
-
-    const data = await response.json();
-
-    const items = data.items.map((item: any) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      duration: 'Duration unavailable' // Would need additional API call to get duration
-    }));
-
-    return NextResponse.json({ items });
+    
+    return NextResponse.json(results);
   } catch (error) {
-    console.error('YouTube API error:', error);
-    return NextResponse.json({ items: DEFAULT_RESULTS });
+    console.error('YouTube API route error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fetch YouTube data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, AuthError } from "@supabase/supabase-js";
 import { supabase } from "../supabase/supabase";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { initializeUserCredits } from "../credits";
+import { initializeUserCredits } from "@/lib/credits";
 
 // Add new types for provider status
 interface ProviderStatus {
@@ -55,29 +55,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    try {
-      // Listen for auth state changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('Auth state changed:', event, session?.user);
-          setUser(session?.user ?? null);
-          
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setLoading(true);
+      try {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_UP') {
           if (session?.user) {
-            await checkBanStatus(session.user.id);
-            await checkLockStatus(session.user.id);
+            // Initialize credits for new users
+            await initializeUserCredits(session.user.id);
+            
+            // Check ban status
+            const { data: banData } = await supabase
+              .from('banned_users')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            if (banData) {
+              setIsBanned(true);
+              setBanInfo(banData);
+            }
           }
-          
-          setLoading(false);
         }
-      );
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Auth state change error:', error);
+      } finally {
+        setLoading(false);
+      }
+    });
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error in auth state change:', error);
-      setLoading(false);
-    }
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Add error boundaries to auth functions
@@ -99,8 +108,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/setup-profile`,
+          data: {
+            email_verified: false,
+            profile_completed: false
+          }
+        }
       });
-      return { data, error };
+
+      if (error) throw error;
+
+      // Send verification email notification
+      await supabase
+        .from('notifications')
+        .insert([
+          {
+            user_id: data.user?.id,
+            type: 'info',
+            message: 'Please check your email to verify your account.',
+            read: false
+          }
+        ]);
+
+      return { data, error: null };
     } catch (error) {
       console.error('Error signing up:', error);
       return { data: null, error: error as AuthError };

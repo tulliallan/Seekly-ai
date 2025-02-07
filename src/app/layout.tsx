@@ -3,6 +3,7 @@ import './styles/animations.css';
 import { AuthProvider } from '@/lib/contexts/AuthContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import type { Metadata } from 'next';
+import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
   title: 'Seekly - AI-Powered Research Assistant',
@@ -26,6 +27,7 @@ export default function RootLayout({
             {children}
           </AuthProvider>
         </ErrorBoundary>
+        <Toaster />
       </body>
     </html>
   );
